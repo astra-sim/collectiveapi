@@ -32,12 +32,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Execution Trace Converter")
     parser.add_argument(
-        "--input_type",
-        type=str,
-        default=None,
-        required=True,
-        help="Input execution trace type")
-    parser.add_argument(
         "--input_filename",
         type=str,
         default=None,
@@ -58,6 +52,7 @@ def main() -> None:
         "--coll_size",
         type=int,
         default=1048576,
+        required=True,
         help="Collective size in Bytes")
     args = parser.parse_args()
 
@@ -65,16 +60,12 @@ def main() -> None:
     logger.debug(" ".join(sys.argv))
 
     try:
-        if args.input_type == "msccl":
-            converter = MSCCL2ChakraConverter(
-                args.input_filename, 
-                args.output_filename, 
-                args.coll_size,
-                logger)
-            converter.convert()
-        else:
-            logger.error(f"{args.input_type} unsupported")
-            sys.exit(1)
+        converter = MSCCL2ChakraConverter(
+            args.input_filename, 
+            args.output_filename, 
+            args.coll_size,
+            logger)
+        converter.convert()
     except Exception as e:
         traceback.print_exc()
         logger.debug(traceback.format_exc())

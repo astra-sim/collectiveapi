@@ -4,8 +4,8 @@ import logging
 
 from  xml.etree import ElementTree
 from typing import Any, List
-from chakra.third_party.utils.protolib import encodeMessage as encode_message
-from chakra.et_def.et_def_pb2 import (
+from chakra.src.third_party.utils.protolib import encodeMessage as encode_message
+from chakra.schema.protobuf.et_def_pb2 import (
     NodeType,
     Node,
     AttributeProto as ChakraAttr,
@@ -83,11 +83,11 @@ class MSCCLSendStep(MSCCLStep):
         node.attr.append(ChakraAttr(name="comm_type",
                                     int64_val=COMM_SEND_NODE))
         node.attr.append(ChakraAttr(name="comm_size",
-                                    uint64_val=comm_data_size_bytes))
+                                    int64_val=comm_data_size_bytes))
         node.attr.append(ChakraAttr(name="comm_dst",
-                                    uint64_val=self.dst))
+                                    int32_val=self.dst))
         node.attr.append(ChakraAttr(name="comm_tag",
-                                    uint64_val=self.tag))
+                                    int32_val=self.tag))
         self.node = node
 
 class MSCCLReceiveStep(MSCCLStep):
@@ -109,11 +109,11 @@ class MSCCLReceiveStep(MSCCLStep):
         node.attr.append(ChakraAttr(name="comm_type",
                                     int64_val=COMM_RECV_NODE))
         node.attr.append(ChakraAttr(name="comm_size",
-                                    uint64_val=comm_data_size_bytes))
+                                    int64_val=comm_data_size_bytes))
         node.attr.append(ChakraAttr(name="comm_src",
-                                    uint64_val=self.src))
+                                    int32_val=self.src))
         node.attr.append(ChakraAttr(name="comm_tag",
-                                    uint64_val=self.tag))
+                                    int32_val=self.tag))
         self.node = node
 
 class MSCCLReceiveReduceComputeStep(MSCCLStep):
@@ -136,11 +136,11 @@ class MSCCLReceiveReduceComputeStep(MSCCLStep):
         recv_node.attr.append(ChakraAttr(name="comm_type",
                                     int64_val=COMM_RECV_NODE))
         recv_node.attr.append(ChakraAttr(name="comm_size",
-                                    uint64_val=comm_data_size_bytes))
+                                    int64_val=comm_data_size_bytes))
         recv_node.attr.append(ChakraAttr(name="comm_src",
-                                    uint64_val=self.src))
+                                    int32_val=self.src))
         recv_node.attr.append(ChakraAttr(name="comm_tag",
-                                    uint64_val=self.tag))
+                                    int32_val=self.tag))
         self.recv_node = recv_node
 
         comp_node = Node()
