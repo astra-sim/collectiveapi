@@ -179,6 +179,7 @@ class MSCCL2ChakraConverter:
         input_filename: str,
         output_filename: str,
         coll_size: int,
+        collective: str,
         logger: logging.Logger
     ) -> None:
         self.input_filename = input_filename
@@ -186,6 +187,11 @@ class MSCCL2ChakraConverter:
         self.logger = logger
         self.next_node_id = 0
         self.collective_size = coll_size #Bytes
+        if collective not in ['allreduce', 'allgather', 'alltoall', 'reducescatter', 'broadcast', 'reduce']:
+            print(f'Collective should be one of allreduce, allgather, alltoall, reducescatter, broadcast, or reduce. Currently {collective}')
+            exit()
+        self.collective = collective
+
         print('collective_size', self.collective_size)
 
     # Creates the global metadata info that is added to the start of all ET files.
@@ -195,7 +201,8 @@ class MSCCL2ChakraConverter:
             input_text = input_file.read()
         attr = [
             ChakraAttr(name="schema", string_val="1.0.2-chakra.0.0.4"),
-            ChakraAttr(name="input_file", string_val=input_text)
+            ChakraAttr(name="input_file", string_val=input_text),
+            ChakraAttr(name="collective", string_val=self.collective)
         ]
         metadata = GlobalMetadata(attr=attr)
         return metadata
@@ -236,7 +243,7 @@ class MSCCL2ChakraConverter:
                 num_chunks = int(gpu.attrib['o_chunks'])
             chunk_size = int(self.collective_size / num_chunks)
             ## HARDCODED. REMOVE WHEN IMPLEMENT COLLECTIVE API
-            if 'allgather' in self.input_filename:
+            if self.collective in ['allgather', 'reduce']:
                 chunk_size = int(self.collective_size)
             node_map[gpu_id] = {}
             step_map[gpu_id] = {}

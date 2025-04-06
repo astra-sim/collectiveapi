@@ -54,6 +54,12 @@ def main() -> None:
         default=1048576,
         required=True,
         help="Collective size in Bytes")
+    parser.add_argument(
+        "--collective",
+        type=str,
+        required=True,
+        choices=["allreduce", "allgather", "alltoall", "reducescatter", "reduce", "broadcast"],
+        help="Collective operation type")
     args = parser.parse_args()
 
     logger = get_logger(args.log_filename)
@@ -64,6 +70,7 @@ def main() -> None:
             args.input_filename, 
             args.output_filename, 
             args.coll_size,
+            args.collective,
             logger)
         converter.convert()
     except Exception as e:
