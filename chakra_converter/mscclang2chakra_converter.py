@@ -179,18 +179,12 @@ class MSCCL2ChakraConverter:
         input_filename: str,
         output_filename: str,
         coll_size: int,
-        collective: str,
         logger: logging.Logger
     ) -> None:
         self.input_filename = input_filename
         self.output_filename = output_filename
         self.logger = logger
         self.next_node_id = 0
-        self.collective_size = coll_size #Bytes
-        if collective not in ['allreduce', 'allgather', 'alltoall', 'reducescatter', 'broadcast', 'reduce']:
-            print(f'Collective should be one of allreduce, allgather, alltoall, reducescatter, broadcast, or reduce. Currently {collective}')
-            exit()
-        self.collective = collective
 
         print('collective_size', self.collective_size)
 
@@ -235,6 +229,11 @@ class MSCCL2ChakraConverter:
         tree = ElementTree.parse(self.input_filename)
         root = tree.getroot()
 
+        collective = root.attrib['coll']
+        if collective not in ["allreduce", "allgather", "alltoall", "reduce_scatter", "reduce", "broadcast"]:
+            print(f"Error: Unsupported collective type {collective}")
+            exit()
+        self.collective = collective
         # Read the XML file and create ET Trace nodes. 
         for gpu in root.findall('gpu'):
             gpu_id = int(gpu.attrib['id'])
