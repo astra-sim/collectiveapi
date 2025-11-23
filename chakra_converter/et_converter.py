@@ -49,12 +49,6 @@ def main() -> None:
         default="debug.log",
         help="Log filename")
     parser.add_argument(
-        "--coll_size",
-        type=int,
-        default=1048576,
-        required=True,
-        help="Collective size in Bytes")
-    parser.add_argument(
         "--collective",
         type=str,
         required=True,
@@ -69,7 +63,6 @@ def main() -> None:
         converter = MSCCL2ChakraConverter(
             args.input_filename, 
             args.output_filename, 
-            args.coll_size,
             args.collective,
             logger)
         converter.convert()

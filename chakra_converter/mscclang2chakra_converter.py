@@ -20,11 +20,6 @@ from chakra.schema.protobuf.et_def_pb2 import (
     GlobalMetadata
 )
 
-HARDCODE_LOCAL_BW = 50
-# HARDCODED. Refer to PacketBundle::call.
-# 1000 b/c microsecond to nanosecond. Refer to Workload::issue_replay
-def calculate_comp_time(data_size): 
-    return int(3 * int(data_size / HARDCODE_LOCAL_BW) / 1000)
 
 class MSCCLStep:    
     def add_parent(
@@ -60,7 +55,8 @@ class MSCCLCompStep(MSCCLStep):
         node.id = node_id
         node.name = f"COMP_NODE_tb{tb_id}_step{step_id}"
         node.type = COMP_NODE
-        node.duration_micros = calculate_comp_time(comp_data_size_bytes)
+        # We do not fill in the compute duration because the data size is 
+        # resolved within the simulator, not here.
         self.node = node
 
 
@@ -70,7 +66,9 @@ class MSCCLSendStep(MSCCLStep):
         tb_xml_node: ElementTree.Element,
         step_id: int, 
         node_id: int,
-        comm_data_size_bytes: int
+        total_chunk_cnt: int,
+        msg_chunk_cnt: int,
+        msg_chunk_idx: int,
     ) -> None:
         tb_id = tb_xml_node.attrib['id']
         self.dst = int(tb_xml_node.attrib['send'])
@@ -82,12 +80,16 @@ class MSCCLSendStep(MSCCLStep):
         node.type = COMM_SEND_NODE
         node.attr.append(ChakraAttr(name="comm_type",
                                     int64_val=COMM_SEND_NODE))
-        node.attr.append(ChakraAttr(name="comm_size",
-                                    int64_val=comm_data_size_bytes))
         node.attr.append(ChakraAttr(name="comm_dst",
                                     int32_val=self.dst))
         node.attr.append(ChakraAttr(name="comm_tag",
                                     int32_val=self.tag))
+        node.attr.append(ChakraAttr(name="msg_chunk_cnt",
+                                    int32_val=msg_chunk_cnt))
+        node.attr.append(ChakraAttr(name="msg_chunk_idx",
+                                    int32_val=msg_chunk_idx))
+        node.attr.append(ChakraAttr(name="total_chunk_cnt",
+                                    int32_val=total_chunk_cnt))
         self.node = node
 
 class MSCCLReceiveStep(MSCCLStep):
@@ -96,7 +98,9 @@ class MSCCLReceiveStep(MSCCLStep):
         tb_xml_node: ElementTree.Element,
         step_id: int, 
         node_id: int,
-        comm_data_size_bytes: int
+        total_chunk_cnt: int,
+        msg_chunk_cnt: int,
+        msg_chunk_idx: int,
     ) -> None:
         tb_id = tb_xml_node.attrib['id']
         self.src = int(tb_xml_node.attrib['recv'])
@@ -108,12 +112,16 @@ class MSCCLReceiveStep(MSCCLStep):
         node.type = COMM_RECV_NODE
         node.attr.append(ChakraAttr(name="comm_type",
                                     int64_val=COMM_RECV_NODE))
-        node.attr.append(ChakraAttr(name="comm_size",
-                                    int64_val=comm_data_size_bytes))
         node.attr.append(ChakraAttr(name="comm_src",
                                     int32_val=self.src))
         node.attr.append(ChakraAttr(name="comm_tag",
                                     int32_val=self.tag))
+        node.attr.append(ChakraAttr(name="msg_chunk_cnt",
+                                    int32_val=msg_chunk_cnt))
+        node.attr.append(ChakraAttr(name="msg_chunk_idx",
+                                    int32_val=msg_chunk_idx))
+        node.attr.append(ChakraAttr(name="total_chunk_cnt",
+                                    int32_val=total_chunk_cnt))
         self.node = node
 
 class MSCCLReceiveReduceComputeStep(MSCCLStep):
@@ -123,7 +131,9 @@ class MSCCLReceiveReduceComputeStep(MSCCLStep):
         step_id: int, 
         recv_node_id: int,
         comp_node_id: int,
-        comm_data_size_bytes: int
+        total_chunk_cnt: int,
+        msg_chunk_cnt: int,
+        msg_chunk_idx: int,
     ) -> None:
         tb_id = tb_xml_node.attrib['id']
         self.src = int(tb_xml_node.attrib['recv'])
@@ -135,20 +145,25 @@ class MSCCLReceiveReduceComputeStep(MSCCLStep):
         recv_node.type = COMM_RECV_NODE
         recv_node.attr.append(ChakraAttr(name="comm_type",
                                     int64_val=COMM_RECV_NODE))
-        recv_node.attr.append(ChakraAttr(name="comm_size",
-                                    int64_val=comm_data_size_bytes))
         recv_node.attr.append(ChakraAttr(name="comm_src",
                                     int32_val=self.src))
         recv_node.attr.append(ChakraAttr(name="comm_tag",
                                     int32_val=self.tag))
+        recv_node.attr.append(ChakraAttr(name="msg_chunk_cnt",
+                                    int32_val=msg_chunk_cnt))
+        recv_node.attr.append(ChakraAttr(name="msg_chunk_idx",
+                                    int32_val=msg_chunk_idx))
+        recv_node.attr.append(ChakraAttr(name="total_chunk_cnt",
+                                    int32_val=total_chunk_cnt))
         self.recv_node = recv_node
 
         comp_node = Node()
         comp_node.id = comp_node_id
         comp_node.name = f"COMP_NODE_tb{tb_id}_step{step_id}"
         comp_node.type = COMP_NODE
-        comp_node.duration_micros = calculate_comp_time(comm_data_size_bytes)
         comp_node.data_deps.append(recv_node.id)
+        # We do not fill in the compute duration because the data size is 
+        # resolved within the simulator, not here.
         self.comp_node = comp_node
 
     def encode_message(
@@ -178,7 +193,6 @@ class MSCCL2ChakraConverter:
         self,
         input_filename: str,
         output_filename: str,
-        coll_size: int,
         collective: str,
         logger: logging.Logger
     ) -> None:
@@ -186,13 +200,11 @@ class MSCCL2ChakraConverter:
         self.output_filename = output_filename
         self.logger = logger
         self.next_node_id = 0
-        self.collective_size = coll_size #Bytes
         if collective not in ['allreduce', 'allgather', 'alltoall', 'reducescatter', 'broadcast', 'reduce']:
             print(f'Collective should be one of allreduce, allgather, alltoall, reducescatter, broadcast, or reduce. Currently {collective}')
             exit()
         self.collective = collective
 
-        print('collective_size', self.collective_size)
 
     # Creates the global metadata info that is added to the start of all ET files.
     def create_global_metadata(self):
@@ -238,13 +250,9 @@ class MSCCL2ChakraConverter:
         # Read the XML file and create ET Trace nodes. 
         for gpu in root.findall('gpu'):
             gpu_id = int(gpu.attrib['id'])
-            num_chunks = int(gpu.attrib['i_chunks'])
-            if num_chunks == 0:
-                num_chunks = int(gpu.attrib['o_chunks'])
-            chunk_size = int(self.collective_size / num_chunks)
-            ## HARDCODED. REMOVE WHEN IMPLEMENT COLLECTIVE API
-            if self.collective in ['allgather', 'reduce']:
-                chunk_size = int(self.collective_size)
+            total_chunk_cnt = int(gpu.attrib['i_chunks'])
+            if total_chunk_cnt == 0:
+                total_chunk_cnt = int(gpu.attrib['o_chunks'])
             node_map[gpu_id] = {}
             step_map[gpu_id] = {}
             self.reset_node_id()
@@ -254,18 +262,24 @@ class MSCCL2ChakraConverter:
                 step_map[gpu_id][tb_id] = {}
                 for step in tb.findall('step'):
                     step_id = int(step.attrib['s'])
-                    chunk_cnt = int(step.attrib['cnt'])
+                    msg_chunk_cnt = int(step.attrib['cnt'])
+                    src_off = int(step.attrib['srcoff'])
+                    dst_off = int(step.attrib['dstoff'])
+                    if src_off != dst_off:
+                        print(f"Error: At gpu {gpu_id} tb {tb_id} step {step} src_off {src_off} != dst_off {dst_off}")
+                        exit()
+                    msg_chunk_idx = src_off
                     step_map[gpu_id][tb_id][step_id] = step
                     et_node_id = self.get_et_node_id()
                     if step.attrib['type'] == "s":
-                        node = MSCCLSendStep(tb, step_id, et_node_id, chunk_size * chunk_cnt)
+                        node = MSCCLSendStep(tb, step_id, et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
                         node_map[gpu_id][tb_id][step_id] = node
                     elif step.attrib['type'] == "r":
-                        node = MSCCLReceiveStep(tb, step_id, et_node_id,  chunk_size * chunk_cnt)
+                        node = MSCCLReceiveStep(tb, step_id, et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
                         node_map[gpu_id][tb_id][step_id] = node
                     elif step.attrib['type'] == "rrc":
                         comp_et_node_id = self.get_et_node_id()
-                        node = MSCCLReceiveReduceComputeStep(tb, step_id, et_node_id, comp_et_node_id, chunk_size * chunk_cnt)
+                        node = MSCCLReceiveReduceComputeStep(tb, step_id, et_node_id, comp_et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
                         node_map[gpu_id][tb_id][step_id] = node
                     elif step.attrib['type'] == "nop":
                         node = MSCCLNopStep()
