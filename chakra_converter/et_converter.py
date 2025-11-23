@@ -49,11 +49,6 @@ def main() -> None:
         default="debug.log",
         help="Log filename")
     parser.add_argument(
-        "--coll_size",
-        type=int,
-        default=1048576,
-        required=True,
-        help="Collective size in Bytes")
     args = parser.parse_args()
 
     logger = get_logger(args.log_filename)
@@ -63,7 +58,6 @@ def main() -> None:
         converter = MSCCL2ChakraConverter(
             args.input_filename, 
             args.output_filename, 
-            args.coll_size,
             logger)
         converter.convert()
     except Exception as e:
