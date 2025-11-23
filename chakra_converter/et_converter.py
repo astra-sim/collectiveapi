@@ -49,11 +49,6 @@ def main() -> None:
         default="debug.log",
         help="Log filename")
     parser.add_argument(
-        "--collective",
-        type=str,
-        required=True,
-        choices=["allreduce", "allgather", "alltoall", "reducescatter", "reduce", "broadcast"],
-        help="Collective operation type")
     args = parser.parse_args()
 
     logger = get_logger(args.log_filename)
@@ -63,7 +58,6 @@ def main() -> None:
         converter = MSCCL2ChakraConverter(
             args.input_filename, 
             args.output_filename, 
-            args.collective,
             logger)
         converter.convert()
     except Exception as e:
