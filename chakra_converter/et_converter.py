@@ -48,7 +48,6 @@ def main() -> None:
         type=str,
         default="debug.log",
         help="Log filename")
-    parser.add_argument(
     args = parser.parse_args()
 
     logger = get_logger(args.log_filename)

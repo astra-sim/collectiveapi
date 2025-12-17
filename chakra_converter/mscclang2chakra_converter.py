@@ -45,12 +45,13 @@ class MSCCLCompStep(MSCCLStep):
     def __init__(
         self,
         tb_xml_node: ElementTree.Element,
-        step_id: int,
+        step,
         node_id: int, 
         comp_data_size_bytes: int
     ) -> None:
         tb_id = tb_xml_node.attrib['id']
-
+        step_id = int(step.attrib['s'])
+        
         node = Node()
         node.id = node_id
         node.name = f"COMP_NODE_tb{tb_id}_step{step_id}"
@@ -64,7 +65,7 @@ class MSCCLSendStep(MSCCLStep):
     def __init__(
         self,
         tb_xml_node: ElementTree.Element,
-        step_id: int, 
+        step, 
         node_id: int,
         total_chunk_cnt: int,
         msg_chunk_cnt: int,
@@ -73,7 +74,8 @@ class MSCCLSendStep(MSCCLStep):
         tb_id = tb_xml_node.attrib['id']
         self.dst = int(tb_xml_node.attrib['send'])
         self.tag = int(tb_xml_node.attrib['chan'])
-
+        step_id = int(step.attrib['s'])
+        
         node = Node()
         node.id = node_id
         node.name = f'COMM_SEND_NODE_tb{tb_id}_step{step_id}'
@@ -90,13 +92,26 @@ class MSCCLSendStep(MSCCLStep):
                                     int32_val=msg_chunk_idx))
         node.attr.append(ChakraAttr(name="total_chunk_cnt",
                                     int32_val=total_chunk_cnt))
+        node.attr.append(ChakraAttr(name="local_time_step",
+                                    int32_val=step_id))
+        node.attr.append(ChakraAttr(name="chunk_offset",
+                                    int32_val=int(step.attrib['srcoff'])))
+        node.attr.append(ChakraAttr(name="hasdep",
+                                    int32_val=int(step.attrib['hasdep'])))
+        node.attr.append(ChakraAttr(name="deps",
+                                    int32_val=int(step.attrib['deps'])))
+        node.attr.append(ChakraAttr(name="depid",
+                                    int32_val=int(step.attrib['depid'])))
+        node.attr.append(ChakraAttr(name="tb_id",
+                                    int32_val=int(tb_id)))
+        
         self.node = node
 
 class MSCCLReceiveStep(MSCCLStep):
     def __init__(
         self,
         tb_xml_node: ElementTree.Element,
-        step_id: int, 
+        step, 
         node_id: int,
         total_chunk_cnt: int,
         msg_chunk_cnt: int,
@@ -105,7 +120,8 @@ class MSCCLReceiveStep(MSCCLStep):
         tb_id = tb_xml_node.attrib['id']
         self.src = int(tb_xml_node.attrib['recv'])
         self.tag = int(tb_xml_node.attrib['chan'])
-
+        step_id = int(step.attrib['s'])
+        
         node = Node()
         node.id = node_id
         node.name = f'COMM_RECV_NODE_tb{tb_id}_step{step_id}'
@@ -122,13 +138,26 @@ class MSCCLReceiveStep(MSCCLStep):
                                     int32_val=msg_chunk_idx))
         node.attr.append(ChakraAttr(name="total_chunk_cnt",
                                     int32_val=total_chunk_cnt))
+        node.attr.append(ChakraAttr(name="local_time_step",
+                                    int32_val=step_id))
+        node.attr.append(ChakraAttr(name="chunk_offset",
+                                    int32_val=int(step.attrib['dstoff'])))
+        node.attr.append(ChakraAttr(name="hasdep",
+                                    int32_val=int(step.attrib['hasdep'])))
+        node.attr.append(ChakraAttr(name="deps",
+                                    int32_val=int(step.attrib['deps'])))
+        node.attr.append(ChakraAttr(name="depid",
+                                    int32_val=int(step.attrib['depid'])))
+        node.attr.append(ChakraAttr(name="tb_id",
+                                    int32_val=int(tb_id)))
+        
         self.node = node
 
 class MSCCLReceiveReduceComputeStep(MSCCLStep):
     def __init__(
         self,
         tb_xml_node: ElementTree.Element,
-        step_id: int, 
+        step,
         recv_node_id: int,
         comp_node_id: int,
         total_chunk_cnt: int,
@@ -138,7 +167,8 @@ class MSCCLReceiveReduceComputeStep(MSCCLStep):
         tb_id = tb_xml_node.attrib['id']
         self.src = int(tb_xml_node.attrib['recv'])
         self.tag = int(tb_xml_node.attrib['chan'])
-
+        step_id = int(step.attrib['s'])
+        
         recv_node = Node()
         recv_node.id = recv_node_id
         recv_node.name = f'COMM_RECV_NODE_tb{tb_id}_step{step_id}'
@@ -155,6 +185,20 @@ class MSCCLReceiveReduceComputeStep(MSCCLStep):
                                     int32_val=msg_chunk_idx))
         recv_node.attr.append(ChakraAttr(name="total_chunk_cnt",
                                     int32_val=total_chunk_cnt))
+        recv_node.attr.append(ChakraAttr(name="local_time_step",
+                                    int32_val=step_id))
+        recv_node.attr.append(ChakraAttr(name="chunk_offset",
+                                    int32_val=int(step.attrib['dstoff'])))
+        recv_node.attr.append(ChakraAttr(name="is_rrc",
+                                    bool_val=True))
+        recv_node.attr.append(ChakraAttr(name="hasdep",
+                                    int32_val=int(step.attrib['hasdep'])))
+        recv_node.attr.append(ChakraAttr(name="deps",
+                                    int32_val=int(step.attrib['deps'])))
+        recv_node.attr.append(ChakraAttr(name="depid",
+                                    int32_val=int(step.attrib['depid'])))
+        recv_node.attr.append(ChakraAttr(name="tb_id",
+                                    int32_val=int(tb_id)))
         self.recv_node = recv_node
 
         comp_node = Node()
@@ -272,19 +316,18 @@ class MSCCL2ChakraConverter:
                     step_map[gpu_id][tb_id][step_id] = step
                     et_node_id = self.get_et_node_id()
                     if step.attrib['type'] == "s":
-                        node = MSCCLSendStep(tb, step_id, et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
+                        node = MSCCLSendStep(tb, step, et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
                         node_map[gpu_id][tb_id][step_id] = node
                     elif step.attrib['type'] == "r":
-                        node = MSCCLReceiveStep(tb, step_id, et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
+                        node = MSCCLReceiveStep(tb, step, et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
                         node_map[gpu_id][tb_id][step_id] = node
                     elif step.attrib['type'] == "rrc":
                         comp_et_node_id = self.get_et_node_id()
-                        node = MSCCLReceiveReduceComputeStep(tb, step_id, et_node_id, comp_et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
+                        node = MSCCLReceiveReduceComputeStep(tb, step, et_node_id, comp_et_node_id, total_chunk_cnt, msg_chunk_cnt, msg_chunk_idx)
                         node_map[gpu_id][tb_id][step_id] = node
                     elif step.attrib['type'] == "nop":
                         node = MSCCLNopStep()
                         node_map[gpu_id][tb_id][step_id] = node
-
         # For each ET Trace node, add the parent dependency information
         for gpu_id in node_map:
             for tb_id in node_map[gpu_id]:
