@@ -11,7 +11,8 @@ The repository is a collection of the following submodules:
 ```
 - astra-sim: The ASTRA-sim simulator and its collective API extension. This collective API extension allows users to define the collective algorithm, instead of using or writing the default algorithms defined in the simulator's System layer. 
 - chakra: An updated version which includes the converter from MSCCL-IR to Chakra ET for collective communication algorithms. 
-- msccl-tools (as-is): Provides examples of the MSCCLang DSL to define collective algorithms. 
+- msccl-tools (as-is): Provides examples of the MSCCLang DSL to define collective algorithms.
+- visualizer: A tool to visualize a collective algorithm represented with Chakra using TEN. 
 ```
 
 # Running the Workflow
@@ -57,3 +58,6 @@ export NETWORK_CONFIG="./inputs/network/analytical/Ring.yml"
     --network-configuration=$NETWORK_CONFIG \
     --remote-memory-configuration=$MEMORY_CONFIG
 ```
+
+## Visualizing the algorithm
+Please refer to [visualizer/README.md](visualizer/README.md)
