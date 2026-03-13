@@ -4,7 +4,19 @@ This repository presents a sample workflow of collective algorithm generation & 
 Users define custom collective algorithms using the MSCCLang DSL, where the resulting collective algorithm is represented in Chakra ET.
 This Chakra ET representation of the *collective algorithm* is fed into the ASTRA-sim distributed ML simulator, along with the *workload* represented in Chakra ET.
 
-A detailed discussion on the background of this work and motivation for a common collective algorithm representation is provided in our paper, "Towards a Standardized Representation for Deep Learning Collective Algorithms". (todo: Add link)
+A detailed discussion on the background of this work and motivation for a common collective algorithm representation is provided in our paper, "Towards a Standardized Representation for Deep Learning Collective Algorithms" ([arxiv link](https://arxiv.org/abs/2408.11008)). Also citable by:
+
+>@ARTICLE{10910230,
+  author={Yoo, Jinsun and Won, William and Cowan, Meghan and Jiang, Nan and Klenk, Benjamin and Sridharan, Srinivas and Krishna, Tushar},
+  journal={IEEE Micro}, 
+  title={Toward a Standardized Representation for Deep Learning Collective Algorithms}, 
+  year={2025},
+  volume={45},
+  number={2},
+  pages={46-55},
+  doi={10.1109/MM.2025.3547363}}
+
+
 
 ## Directory Structure
 The repository is a collection of the following submodules:
