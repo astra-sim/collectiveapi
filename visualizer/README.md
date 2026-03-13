@@ -126,8 +126,12 @@ Output HTML file name
    Visualize the path of each message chunk from its first SEND (time step 0) to the final RECV, showing how data moves through the network over time.
 
 3. **Directly from Chakra Graph**  
-   Dependency information is already encoded in the default Chakra graph. See if we can leverage this information wihtout having to add the step_id, etc. attributes. This will help us have a smaller Chakra file with less attributes. 
+   Dependency information is already encoded in the default Chakra graph. See if we can leverage this information wihtout having to add the step_id, etc. attributes. This will help us have a smaller Chakra file with less attributes.
 
+   
+## Key Contributors
+[Srinidhi Subramaniam Pasupathy](https://github.com/Srinidhi2000) (Work while in Georgia Tech, now NVIDIA): srinidhisp@gatech.edu
+[Jinsun Yoo](https://github.com/jinsun-yoo/) (Georgia Tech): jinsun@gatech.edu
 
 
 
