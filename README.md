@@ -29,34 +29,50 @@ The repository is a collection of the following submodules:
 
 # Running the Workflow
 ## Setup
-Please refer to the [ASTRA-sim wiki](https://astra-sim.github.io/astra-sim-docs/getting-started/setup.html) for required setup environments. 
+```bash
+git clone git@github.com:mlcommons/chakra
+cd chakra
+pip install .
+
+git clone git@github.com:astra-sim/collectiveapi​
+cd collectiveapi​
+git submodule init​
+git submodule update​
+cd msccl-tools​
+pip install .
 ```
+
+## Generating Collective Algorithm ET
+```
+cd $REPO_PATH
+mkdir demo_allreduce
+python3 msccl-tools/examples/mscclang/allreduce_a100_ring.py \
+    64 1 1 > \
+    demo_allreduce/mscclir.xml
+
+python chakra_converter/et_converter.py \
+    --input_filename ./demo_allreduce/mscclir.xml \
+    --output_filename ./demo_allreduce/mscclang_graph
+```
+
+## Running the Simulation in ASTRA-sim
+### Setting up Dependencies
+Please refer to the [ASTRA-sim wiki](https://astra-sim.github.io/astra-sim-docs/getting-started/setup.html) for required setup environments. 
+
+```bash
 cd astra-sim
 bash build/astra_analytical/build.sh
 ```
 
 ## Generating Workload ET
-```
+```bash
 cd extern/graph_frontend/chakra
 python3 -m utils.et_generator.et_generator --num_npus 64 --num_dims 1 --default_comm_size 16384
 ```
 
-## Generating Collective Algorithm ET
-```
-cd ../../../../msccl-tools
-python3 allreduce_a100_ring.py 64 1 1 > demo_allreduce.xml
 
-cd ../chakra
-python3 -m et_converter.et_converter \
-        --input_type        msccl \
-        --input_filename    ../msccl-tools/demo_allreduce.xml \
-        --output_filename   ../msccl-tools/allreduce_ring_mscclang \
-        --num_dims          1 \
-        --coll_size         16384'
-```
-
-## Running the Simulation in ASTRA-sim
-```
+## Running the simulation
+```bash
 cd ../astra-sim
 export SYSTEM_CONFIG="./inputs/system/Ring.json"
 export MEMORY_CONFIG="./inputs/remote_memory/analytical/no_memory_expansion.json"
